@@ -77,3 +77,6 @@ Documentation
 -------------
 
 Read the [documentation](https://docs.facefusion.io) for a deep dive.
+
+The Gradio Server exposed the API documentation at `http://localhost:7870/?view=api`,
+go check for API-driven UI usage.
