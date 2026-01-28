@@ -10,7 +10,7 @@ from pydantic import BaseModel
 import io
 from PIL import Image
 
-app = FastAPI(title="FaceFusion API", description="API để thực hiện face swap")
+app = FastAPI(title="FaceFusion API", description="API wrapper for FaceFusion")
 
 # ===== CONFIG =====
 FACEFUSION_URL = "http://127.0.0.1:7870"
@@ -24,11 +24,11 @@ async def startup_event():
     """Khởi tạo Gradio client khi app khởi động"""
     global client
     try:
-        print("🔌 Connecting to FaceFusion server...")
+        print("[INFO] Connecting to FaceFusion server...")
         client = Client(FACEFUSION_URL)
-        print("✅ Đã kết nối với FaceFusion server")
+        print("[INFO] Connected to FaceFusion server")
     except Exception as e:
-        print(f"❌ Lỗi khi kết nối: {e}")
+        print(f"[ERROR] Error connecting to FaceFusion server: {e}")
         raise
 
 
@@ -55,7 +55,7 @@ def decode_base64_image(base64_string: str) -> str:
         
         return temp_file.name
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Lỗi khi decode base64 image: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"[ERROR] Error decoding base64 image: {str(e)}")
 
 
 def process_face_swap(source_image_path: str, target_image_path: str):
@@ -63,7 +63,7 @@ def process_face_swap(source_image_path: str, target_image_path: str):
     global client
     
     if client is None:
-        raise HTTPException(status_code=500, detail="Gradio client chưa được khởi tạo")
+        raise HTTPException(status_code=500, detail="[ERROR] Gradio client not initialized")
     
     try:
         # 1. Upload TARGET image (dùng /update_1 cho single file)
@@ -92,12 +92,12 @@ def process_face_swap(source_image_path: str, target_image_path: str):
                 output_path = image_output
 
         if not output_path or not os.path.exists(output_path):
-            raise HTTPException(status_code=500, detail="Không tạo được ảnh kết quả")
+            raise HTTPException(status_code=500, detail="[ERROR] Failed to create output image")
         
         return output_path
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi khi xử lý face swap: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"[ERROR] Error processing face swap: {str(e)}")
 
 
 @app.post("/face-swap")
@@ -133,7 +133,7 @@ async def face_swap_endpoint(request: FaceSwapRequest):
             "success": True,
             "result_image": result_base64,
             "processing_time": round(elapsed_time, 2),
-            "message": "Face swap thành công"
+            "message": "Face swap successful"
         })
     
     except HTTPException:
@@ -144,7 +144,7 @@ async def face_swap_endpoint(request: FaceSwapRequest):
             os.unlink(source_temp_path)
         if target_temp_path and os.path.exists(target_temp_path):
             os.unlink(target_temp_path)
-        raise HTTPException(status_code=500, detail=f"Lỗi: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"[ERROR]: {str(e)}")
 
 
 @app.post("/face-swap/files")
@@ -195,7 +195,7 @@ async def face_swap_files_endpoint(
             os.unlink(source_temp_path.name)
         if target_temp_path and os.path.exists(target_temp_path.name):
             os.unlink(target_temp_path.name)
-        raise HTTPException(status_code=500, detail=f"Lỗi: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"[ERROR]: {str(e)}")
 
 
 @app.get("/health")
@@ -205,12 +205,12 @@ async def health_check():
     if client is None:
         return JSONResponse(
             status_code=503,
-            content={"status": "error", "message": "Gradio client chưa được khởi tạo"}
+            content={"status": "error", "message": "[ERROR] Gradio client not initialized"}
         )
     return JSONResponse(content={
         "status": "healthy",
         "facefusion_url": FACEFUSION_URL,
-        "message": "API đang hoạt động bình thường"
+        "message": "API is running normally"
     })
 
 
